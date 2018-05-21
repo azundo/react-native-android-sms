@@ -45,7 +45,6 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     private Cursor smsCursor;
     private Map<Long, String> smsList;
     private Map<Long, Object> smsListBody;
-    Activity mActivity = null;
     public SmsModule(ReactApplicationContext reactContext)
     {
         super(reactContext);
@@ -60,7 +59,6 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
 
     @ReactMethod
     public void list(String filter, final Callback errorCallback, final Callback successCallback) {
-        mActivity = getCurrentActivity();
         try{
             JSONObject filterJ = new JSONObject(filter);
             String uri_filter = filterJ.has("box") ? filterJ.optString("box") : "inbox";
@@ -70,7 +68,7 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
             String fcontent = filterJ.optString("body");
             int indexFrom = filterJ.has("indexFrom") ? filterJ.optInt("indexFrom") : 0;
             int maxCount = filterJ.has("maxCount") ? filterJ.optInt("maxCount") : -1;
-            Cursor cursor = mActivity.getContentResolver().query(Uri.parse("content://sms/"+uri_filter), null, "", null, null);
+            Cursor cursor = getCurrentActivity().getContentResolver().query(Uri.parse("content://sms/"+uri_filter), null, "", null, null);
             int c = 0;
             JSONArray jsons = new JSONArray();
             while (cursor.moveToNext()) {
@@ -149,13 +147,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
     
     @ReactMethod
     public void send(String addresses, String text, final Callback errorCallback, final Callback successCallback) {
-      mActivity = getCurrentActivity();
       try {
         JSONObject jsonObject = new JSONObject(addresses);
         JSONArray addressList = jsonObject.getJSONArray("addressList");
         int n;
           if ((n = addressList.length()) > 0) {
-            PendingIntent sentIntent = PendingIntent.getBroadcast(mActivity, 0, new Intent("SENDING_SMS"), 0);
+            PendingIntent sentIntent = PendingIntent.getBroadcast(getCurrentActivity(), 0, new Intent("SENDING_SMS"), 0);
             SmsManager sms = SmsManager.getDefault();
             for (int i = 0; i < n; i++)
             {
@@ -164,12 +161,12 @@ public class SmsModule extends ReactContextBaseJavaModule /*implements LoaderMan
                 sms.sendTextMessage(address, null, text, sentIntent, null);
             }
           } else {
-            PendingIntent sentIntent = PendingIntent.getActivity(mActivity, 0, new Intent("android.intent.action.VIEW"), 0);
+            PendingIntent sentIntent = PendingIntent.getActivity(getCurrentActivity(), 0, new Intent("android.intent.action.VIEW"), 0);
             Intent intent = new Intent("android.intent.action.VIEW");
             intent.putExtra("sms_body", text);
             intent.setData(Uri.parse("sms:"));
             try {
-              sentIntent.send(mActivity.getApplicationContext(), 0, intent);
+              sentIntent.send(getCurrentActivity().getApplicationContext(), 0, intent);
               successCallback.invoke("OK");
             }
             catch (PendingIntent.CanceledException e) {
